@@ -1,46 +1,65 @@
 # Gait IMU Analyzer
 
-A desktop tool for sagittal ankle and knee gait analysis from two
-IMUs. Built for the Honours thesis *Validating IMU-Derived Joint
+A lightweight desktop application for measuring how the ankle and
+knee move during walking, using only two small wearable sensors.
+Developed alongside the Honours thesis *Validating IMU-Derived Joint
 Kinematics for Pediatric Gait Analysis* (K. Jijith, University of
 Sydney, 2025).
 
 ---
 
-## Problem
+## The problem
 
-3D motion capture is the clinical gold standard for measuring joint
-kinematics, but it needs a dedicated lab, multiple cameras, trained
-operators, and a cooperative subject. That makes it impractical for
-routine assessment — especially in young children and patients
-recovering from injury or surgery, who are exactly the populations
-that benefit most from regular gait monitoring.
+Clinicians and researchers rely on optical motion capture to study
+how people walk. These systems are accurate, but they require a
+dedicated laboratory, multiple synchronised cameras, reflective
+markers, and trained operators — a setup that is rarely available
+outside specialist gait laboratories.
 
-## Solution
+The patients who would benefit most from regular gait assessment
+are often the hardest to bring into such a lab: young children,
+post-surgical patients, and people with neuromuscular conditions
+such as cerebral palsy. For them, frequent monitoring with optical
+motion capture is not realistic.
 
-This tool derives sagittal ankle and knee kinematics from a minimal
-two-IMU setup (foot + shank for ankle, shank + thigh for knee). It:
+Inertial measurement units (IMUs) — small wireless sensors
+combining accelerometers, gyroscopes, and magnetometers — offer
+a portable alternative. The open question is whether a small
+number of IMUs can recover joint angles accurate enough to
+support clinical interpretation.
 
-- performs **functional sensor-to-segment calibration**, so precise
-  IMU mounting is not critical;
-- detects **heel strikes** from world-vertical foot/shank acceleration;
-- segments and normalises **strides** to 0–100 % gait;
-- reports a **mean ± SD ensemble curve** plus spatiotemporal metrics
-  (cadence, stride time, stride length, walking speed);
-- lets the operator **keep or drop individual strides** as a
-  reproducible alternative to ad-hoc cropping.
+## The solution
 
-Validated against Vicon optical motion capture during healthy adult
-level walking:
+This tool implements a minimal two-IMU pipeline for sagittal-plane
+joint kinematics:
 
-| Joint           | RMSE  | Pearson *r* | CCC   |
-| --------------- | ----- | ----------- | ----- |
-| Ankle (DF/PF)   | 2.89° | 0.974       | 0.966 |
-| Knee (flexion)  | 2.18° | 0.994       | high  |
+- **Ankle** — one sensor on the foot, one on the shank.
+- **Knee** — one sensor on the shank, one on the thigh.
 
-## Install
+A brief functional calibration removes the need for precise sensor
+mounting. Heel-strike events are detected from vertical
+acceleration, the recording is segmented into individual strides,
+and a mean ± standard-deviation joint-angle curve is reported across
+the gait cycle alongside spatiotemporal metrics — cadence, stride
+time, stride length, and walking speed. Atypical strides can be
+excluded interactively, providing a transparent alternative to
+ad-hoc data trimming.
 
-Requires **Python ≥ 3.9** (macOS, Linux, Windows).
+Validated against synchronised Vicon optical motion capture during
+healthy adult walking trials:
+
+| Joint           | RMSE  | Pearson *r* | Concordance (CCC) |
+| --------------- | ----- | ----------- | ----------------- |
+| Ankle (DF/PF)   | 2.89° | 0.974       | 0.966             |
+| Knee (flexion)  | 2.18° | 0.994       | very high         |
+
+Both joints agree with motion capture to within approximately three
+degrees — the threshold typically regarded as clinically
+interpretable.
+
+## Installation
+
+Requires **Python 3.9 or newer**, on macOS, Linux, or Windows.
 
 ```bash
 git clone https://github.com/kalamity0513/gait-imu-analyzer.git
@@ -52,21 +71,27 @@ source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -e .
 ```
 
-> **macOS note.** If `python -m tkinter` fails, install Tk:
-> `brew install python-tk`.
+> **macOS note.** The interface uses Tkinter, which ships with the
+> python.org installer but is not always included with Homebrew
+> Python. If `python -m tkinter` raises an error, install the Tk
+> bindings with `brew install python-tk`.
 
-Launch:
+To launch the application:
 
 ```bash
 gait-imu
 ```
 
-Demo data is bundled in `data/Subject1_A1/` (ankle) and
-`data/Subject1_K1/` (knee).
+A demonstration ankle session and knee session are bundled under
+`data/Subject1_A1/` and `data/Subject1_K1/` respectively, so the
+pipeline can be exercised end-to-end without recording new data.
 
 ---
 
 ## Citation
+
+If this tool supports academic work, please cite the underlying
+thesis:
 
 > Jijith, K. (2025). *Validating IMU-Derived Joint Kinematics for
 > Pediatric Gait Analysis.* Bachelor of Biomedical Engineering
@@ -75,4 +100,4 @@ Demo data is bundled in `data/Subject1_A1/` (ankle) and
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Released under the MIT License — see [LICENSE](LICENSE).
