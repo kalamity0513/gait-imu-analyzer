@@ -134,7 +134,15 @@ python -m gait_imu      # equivalent
 
 ## Quick demo with the bundled data
 
-Two sessions ship with the repo under `data/`:
+> **Demo data only.** The two sessions in `data/` ship with the repo
+> purely so you can try the pipeline end-to-end without recording
+> your own IMU streams. They are **not** clinical reference recordings
+> and the numbers reported by the app on these files should be treated
+> as illustrative — useful for verifying the install works, not for
+> drawing conclusions. To analyse your own walk, replace these CSVs
+> with your own (same column conventions — see [CSV format](#csv-format)).
+
+Two demo sessions ship with the repo under `data/`:
 
 | Folder            | Joint | Files to load                                                          |
 | ----------------- | ----- | ---------------------------------------------------------------------- |
