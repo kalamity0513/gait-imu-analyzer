@@ -1,7 +1,8 @@
-"""Visual theme: clinical, Apple-Health-inspired light design.
+"""Visual theme: dark futuristic medical UI.
 
-A single source of truth so the UI and the embedded plots stay
-visually consistent.
+Deep ink-navy background, electric cyan primary, soft purple secondary,
+luminous accents on data. The palette is consistent across ttk widgets,
+custom Canvas widgets, and embedded matplotlib figures.
 """
 
 import matplotlib.pyplot as plt
@@ -9,138 +10,128 @@ from matplotlib import patheffects
 
 
 # ----------------------------------------------------------------------
-#  Palette
+#  Palette — dark futuristic medical
 # ----------------------------------------------------------------------
-#
-# Inspired by Apple Health and modern clinical dashboards: cool
-# off-white background, pure-white cards, hairline borders, and
-# semantic colours used sparingly so data does the talking.
 
 PALETTE = {
     # Surfaces
-    "bg":            "#f1f3f7",   # app background (cool gray)
-    "bg_alt":        "#e8ebf2",
-    "panel":         "#ffffff",
-    "panel_alt":     "#f7f8fb",
-    "panel_hover":   "#f0f2f6",
-    "sidebar":       "#ffffff",
-    "sidebar_alt":   "#f7f8fb",
+    "bg":            "#070b18",   # deep ink (almost black)
+    "bg_alt":        "#0d1424",
+    "panel":         "#10172a",   # card surface
+    "panel_alt":     "#161e35",
+    "panel_hover":   "#1c2643",   # hover lift
+    "panel_active":  "#22305a",
 
     # Hairlines
-    "border":        "#e6e8ee",
-    "border_strong": "#d6dae3",
-    "border_focus":  "#0071e3",
-    "divider":       "#eef0f4",
+    "border":        "#22304f",
+    "border_strong": "#324568",
+    "divider":       "#1a2540",
+    "glow":          "#22d3ee",   # used for active outlines
 
     # Text
-    "text":          "#0c111e",   # near-black for body
-    "text_soft":     "#3c4253",
-    "muted":         "#6b7280",
-    "muted_strong":  "#4b5563",
-    "subtle":        "#9aa3b2",
+    "text":          "#e7eef8",
+    "text_soft":     "#cfd9ea",
+    "muted":         "#8693ad",
+    "muted_strong":  "#a9b6cf",
+    "subtle":        "#566385",
 
-    # Accents
-    "accent":        "#0071e3",   # Apple blue
-    "accent_dark":   "#0058b8",
-    "accent_soft":   "#e1efff",
-    "accent_tint":   "#f1f7ff",
+    # Accents — electric cyan primary
+    "accent":        "#22d3ee",   # cyan
+    "accent_dark":   "#0e9bb6",
+    "accent_glow":   "#67e8f9",   # bright glow tone
+    "accent_soft":   "#0b2a36",   # tinted dark fill
+    "accent_tint":   "#0a1f2a",
+    # Secondary — soft violet (used for active stride / contrast)
+    "accent2":       "#a78bfa",
+    "accent2_dark":  "#7c3aed",
+    "accent2_soft":  "#1a1538",
 
-    # Semantic (Apple Health-style)
-    "ok":            "#34c759",
-    "ok_dark":       "#1f9d3f",
-    "ok_soft":       "#e3f8e8",
-    "warn":          "#ff9500",
-    "warn_dark":     "#cc7700",
-    "warn_soft":     "#fff1de",
-    "danger":        "#ff3b30",
-    "danger_dark":   "#c4312a",
-    "danger_soft":   "#ffe5e3",
-    "info":          "#0a84ff",
-    "info_soft":     "#e0eeff",
-
-    # Sidebar text (now on white)
-    "sidebar_text":  "#0c111e",
-    "sidebar_muted": "#6b7280",
-    "sidebar_hover": "#f1f7ff",
+    # Semantic — luminous on dark
+    "ok":            "#34d399",
+    "ok_soft":       "#0d2820",
+    "warn":          "#fbbf24",
+    "warn_soft":     "#241d09",
+    "danger":        "#f87171",
+    "danger_soft":   "#27110f",
+    "info":          "#60a5fa",
+    "info_soft":     "#0f1d36",
 }
 
-# Plot-specific colour assignments
 PLOT_COLORS = {
-    "mean":         "#0071e3",
-    "mean_dark":    "#0058b8",
-    "fill":         "#9ec5fe",
-    "fill_alt":     "#cfe1ff",
-    "accel":        "#1f2937",
-    "accel_soft":   "#cbd5e1",
-    "hs_raw":       "#9aa3b2",
-    "hs_drop":      "#ff3b30",
-    "hs_keep":      "#34c759",
-    "stride":       "#0071e3",
-    "stride_off":   "#c5cad4",
-    "grid":         "#eef0f4",
-    "axis":         "#cbd1dc",
+    "mean":         "#22d3ee",
+    "mean_dark":    "#0e9bb6",
+    "fill":         "#0d3a4d",       # cyan-tinted dark
+    "fill_alt":     "#102a3a",
+    "accel":        "#cfd9ea",
+    "accel_soft":   "#324568",
+    "hs_raw":       "#566385",
+    "hs_drop":      "#f87171",
+    "hs_keep":      "#34d399",
+    "stride":       "#22d3ee",
+    "stride_alt":   "#a78bfa",
+    "stride_off":   "#324568",
+    "grid":         "#1c2643",
+    "axis":         "#324568",
 
-    # Gait-phase fills (very soft, used as background bands)
-    "stance_fill":  "#e1efff",   # tinted blue
-    "swing_fill":   "#fff1de",   # tinted amber
-    "norm_band":    "#e8f0ff",   # normative reference band
+    # Gait-phase fills (subtle on dark)
+    "stance_fill":  "#0c1c34",
+    "swing_fill":   "#1a1232",
+    # Healthy-adult reference band — soft lilac
+    "norm_band":    "#b19cd9",
+    "norm_band_line": "#d4b6e8",
 
     # Multi-stride traces
-    "stride_trace": "#a4cafe",
-    "stride_dim":   "#dde3ee",
+    "stride_trace": "#3a6580",
+    "stride_dim":   "#22304f",
 }
 
 
 # ----------------------------------------------------------------------
 #  Typography
 # ----------------------------------------------------------------------
-#
-# A single fallback chain so the same fonts apply to ttk widgets
-# *and* matplotlib text. SF Pro / Helvetica Neue come first; system
-# fallbacks ensure cross-platform rendering.
 
-# SF Pro is the system UI font on macOS, but matplotlib's font finder
-# doesn't always resolve it. Helvetica Neue / Helvetica are the visual
-# match Apple uses as fallbacks, and DejaVu keeps Linux/Windows happy.
 FONT_FAMILY = ["Helvetica Neue", "Helvetica", "Arial", "DejaVu Sans"]
+MONO_FAMILY = ["JetBrains Mono", "SF Mono", "Menlo", "Monaco", "Courier"]
 
 
 class FONT:
     """Ready-made (family, size, weight) tuples for ttk widgets."""
-    DISPLAY     = ("Helvetica Neue", 22, "bold")
-    HEADER      = ("Helvetica Neue", 17, "bold")
-    SUBHEADER   = ("Helvetica Neue", 11, "normal")
-    SECTION     = ("Helvetica Neue", 9,  "bold")
-    BODY        = ("Helvetica Neue", 11, "normal")
-    BODY_BOLD   = ("Helvetica Neue", 11, "bold")
-    SMALL       = ("Helvetica Neue", 9,  "normal")
-    SMALL_BOLD  = ("Helvetica Neue", 9,  "bold")
-    METRIC      = ("Helvetica Neue", 26, "bold")
-    METRIC_UNIT = ("Helvetica Neue", 13, "normal")
-    PILL        = ("Helvetica Neue", 9,  "bold")
-    MONO        = ("Menlo", 11, "normal")
+    DISPLAY     = ("Helvetica Neue", 26, "bold")
+    HEADER      = ("Helvetica Neue", 18, "bold")
+    SUBHEADER   = ("Helvetica Neue", 12, "normal")
+    SECTION     = ("Helvetica Neue", 10, "bold")        # uppercase eyebrow text
+    BODY        = ("Helvetica Neue", 12, "normal")
+    BODY_BOLD   = ("Helvetica Neue", 12, "bold")
+    SMALL       = ("Helvetica Neue", 10, "normal")
+    SMALL_BOLD  = ("Helvetica Neue", 10, "bold")
+    METRIC      = ("Menlo", 30, "bold")                  # mono for futuristic data
+    METRIC_UNIT = ("Menlo", 13, "normal")
+    PILL        = ("Helvetica Neue", 10, "bold")
+    MONO        = ("Menlo", 12, "normal")
+    MONO_BOLD   = ("Menlo", 12, "bold")
+    HERO        = ("Helvetica Neue", 28, "bold")
+    TAB         = ("Helvetica Neue", 11, "bold")
 
 
 # ----------------------------------------------------------------------
-#  Matplotlib defaults
+#  Matplotlib defaults — dark canvas, luminous strokes
 # ----------------------------------------------------------------------
 
 def style_mpl() -> None:
-    """Apply matplotlib rcParams that match the app's clinical theme."""
     plt.rcParams.update({
         "figure.facecolor":   PALETTE["panel"],
         "axes.facecolor":     PALETTE["panel"],
         "savefig.facecolor":  PALETTE["panel"],
 
         "axes.edgecolor":     PLOT_COLORS["axis"],
-        "axes.linewidth":     0.9,
+        "axes.linewidth":     1.0,
         "axes.labelcolor":    PALETTE["text_soft"],
         "axes.labelpad":      6,
         "axes.titlecolor":    PALETTE["text"],
         "axes.titleweight":   "semibold",
-        "axes.titlesize":     12.5,
+        "axes.titlesize":     13,
         "axes.titlepad":      14,
-        "axes.labelsize":     10.5,
+        "axes.labelsize":     11,
         "axes.labelweight":   "medium",
         "axes.spines.top":    False,
         "axes.spines.right":  False,
@@ -148,8 +139,8 @@ def style_mpl() -> None:
         "text.color":         PALETTE["text"],
         "xtick.color":        PALETTE["muted"],
         "ytick.color":        PALETTE["muted"],
-        "xtick.labelsize":    9.5,
-        "ytick.labelsize":    9.5,
+        "xtick.labelsize":    10,
+        "ytick.labelsize":    10,
         "xtick.major.size":   3.0,
         "ytick.major.size":   3.0,
         "xtick.major.width":  0.7,
@@ -165,23 +156,23 @@ def style_mpl() -> None:
         "grid.alpha":         1.0,
 
         "legend.frameon":     False,
-        "legend.fontsize":    9.5,
+        "legend.fontsize":    10,
         "legend.handlelength": 1.6,
         "legend.borderaxespad": 0.4,
+        "legend.labelcolor":  PALETTE["text_soft"],
 
-        "lines.linewidth":    1.6,
+        "lines.linewidth":    1.7,
         "lines.solid_capstyle": "round",
         "lines.solid_joinstyle": "round",
 
         "font.family":        FONT_FAMILY,
-        "font.size":          10.5,
+        "font.size":          11,
 
         "figure.dpi":         110,
     })
 
 
 def style_axes(ax) -> None:
-    """Apply per-axes refinements that complement :func:`style_mpl`."""
     for spine in ("top", "right"):
         ax.spines[spine].set_visible(False)
     ax.spines["left"].set_color(PLOT_COLORS["axis"])
@@ -192,7 +183,7 @@ def style_axes(ax) -> None:
     ax.set_axisbelow(True)
 
 
-def soft_glow(color, lw=4, alpha=0.18):
-    """Return a path-effect that draws a soft halo behind a line."""
+def soft_glow(color, lw=4, alpha=0.30):
+    """Outer-glow path effect — looks great on dark."""
     return [patheffects.Stroke(linewidth=lw, foreground=color, alpha=alpha),
             patheffects.Normal()]

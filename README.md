@@ -15,13 +15,25 @@ The pipeline auto-detects heel strikes, segments strides
 walking speed, gait variability), and lets the clinician keep or
 drop individual strides before the mean ± SD curve is computed.
 
+![Demo](docs/screenshots/demo.gif)
+
+> The animated demo above walks through Home → Dashboard → All
+> Strides on the bundled `Subject1_A1` ankle session. See
+> [Recording the demo](#recording-the-demo) for how to regenerate
+> it.
+
 ---
 
 ## Highlights
 
-- **Clinical-grade UI** — Apple-Health-inspired light theme, rounded
-  cards, status pills, dashboard tiles with **reference-range bars**,
-  and a plain-language **clinical interpretation** panel.
+- **Dark, futuristic clinical UI** — deep ink-navy background, electric
+  cyan / soft-violet accents, rounded **flip cards** (front: metric &
+  status pill; back: plain-language description), reference-range bars,
+  and custom pill tabs.
+- **Guided onboarding** — the **Home** tab walks the user through
+  *Step 1 — placement* (numbered instructions next to a 3-view
+  anatomical leg diagram with the IMU pucks marked) and
+  *Step 2 — upload* (joint pick + Select CSV).
 - **Gait-cycle aware plots** — every overlay plot ships with
   **stance / swing shading**, gait-phase chips (IC, LR, MSt, TSt, PSw,
   ISw, MSw, TSw), an optional **healthy-adult reference band**, and
@@ -132,29 +144,34 @@ Two sessions ship with the repo under `data/`:
 ### Walk-through (Ankle session)
 
 1. Launch the app → `gait-imu`.
-2. In the left sidebar, under **Joint**, select **Ankle (Foot + Shank)**.
-3. Click **📂  Select CSVs**.
+2. **Home → Step 1** — read the placement panel and check the 3-view
+   anatomical diagram. Mount the **Foot IMU** on the dorsum (top of
+   foot, just past the laces) and the **Shank IMU** on the
+   antero-medial mid-shank.
+3. **Home → Step 2** — pick **Ankle (Foot + Shank)** and the
+   **Functional DF/PF** angle method, then press **Select CSV files**.
 4. Pick `data/Subject1_A1/Subject1_A1_Foot.csv` then
    `data/Subject1_A1/Subject1_A1_Shank.csv`.
 5. The app auto-infers a standing-still window from near-zero
    foot-vertical acceleration and pre-fills both **Standing** and
-   **Ankle zero** windows.
-6. Inspect:
-   - **Dashboard**  — five clinical tiles (cadence, stride time, stride
-     length, walking speed, variability), each with a status pill and a
-     reference-range bar. Right-hand panel summarises the session in
-     plain language and flags anything outside healthy-adult bands.
-   - **Acceleration / HS**  — top: vertical accel + heel-strike markers
+   **Ankle zero** windows on the **Setup** tab.
+6. Inspect, via the pill tabs at the top of the window:
+   - **Dashboard** — five flip cards (cadence, stride time, stride
+     length, walking speed, variability), each with a status pill and
+     a reference-range bar. Hover any card to flip it and read the
+     plain-language description. Below: a mean ± SD overlay and a
+     stride-time histogram.
+   - **Acceleration / HS** — top: vertical accel + heel-strike markers
      (raw / filtered / kept). Middle: stride rail. Bottom: per-stride
-     ankle angle traces in absolute time, all aligned on the same x-axis.
-   - **Gait-Cycle Overlay**  — angle vs % gait with **stance / swing
+     ankle angle traces in absolute time, all aligned on the same
+     x-axis.
+   - **Gait-Cycle Overlay** — angle vs % gait with **stance / swing
      shading**, gait-phase chips, mean ± 1 SD across kept strides, and
-     a healthy-adult **reference band** for visual comparison.
-   - **All Strides**  — every stride drawn individually; click a line
-     or double-click a row to toggle "keep". Then press **Recompute
-     from kept** to update the overlay and metrics.
-   - **Metrics**  — full numerical summary.
-7. From the sidebar: **⬇  Export CSV** writes four files
+     an optional lilac healthy-adult **reference band**.
+   - **All Strides** — every stride drawn individually; click a line
+     or double-click a row to toggle "keep". Press **Recompute from
+     kept** to update the overlay and metrics.
+7. From the **Setup** tab → **Export CSV** writes four files
    (`*_overlay.csv`, `*_strides_all.csv`, `*_strides_kept.csv`,
    `*_metrics.csv`).
 
@@ -249,9 +266,10 @@ gait-imu-analyzer/
 │   │   └── stride.py           HS pairing, curve resampling, results
 │   ├── export.py               CSV export of session results
 │   └── ui/
-│       ├── widgets.py          ttk styles + RoundedCard, MetricTile, StatusPill
+│       ├── widgets.py          ttk styles + Card / FlipCard / MetricTile / PillTabBar
+│       ├── sensor_diagram.py   3-view anatomical leg + IMU pucks (matplotlib 3D)
 │       ├── plots.py            figure builders (phase shading, normative bands)
-│       └── app.py              IMUApp: sidebar layout + tab orchestration
+│       └── app.py              IMUApp: header + pill-tab orchestration
 ├── pyproject.toml
 ├── requirements.txt
 ├── LICENSE
@@ -284,6 +302,38 @@ gait-imu-analyzer/
 
 All thresholds live in `src/gait_imu/config.py` and can be tuned
 without editing the pipelines.
+
+---
+
+## Recording the demo
+
+`docs/screenshots/demo.gif` is a short walk-through of the app on the
+bundled ankle session. To re-record it on macOS:
+
+1. **Capture** with `Cmd + Shift + 5` → *Record Selected Portion* →
+   draw a rectangle around the app window → *Record*. Drive through
+   `Home → Dashboard → All Strides`, then stop. The result lands on
+   the Desktop as a `.mov`.
+2. **Convert to GIF** with [`ffmpeg`](https://ffmpeg.org/) (one-liner,
+   ~12 fps, 960 px wide):
+
+   ```bash
+   ffmpeg -i ~/Desktop/demo.mov \
+          -vf "fps=12,scale=960:-1:flags=lanczos" \
+          -loop 0 docs/screenshots/demo.gif
+   ```
+
+   For a smaller file size, drop fps to 8 and pass through
+   `gifsicle -O3` afterwards.
+3. Commit the regenerated GIF:
+
+   ```bash
+   git add docs/screenshots/demo.gif
+   git commit -m "docs: refresh demo gif"
+   ```
+
+The README references it from the top of the file, so any update
+flows through automatically.
 
 ---
 

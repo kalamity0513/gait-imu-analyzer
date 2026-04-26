@@ -39,47 +39,42 @@ class RefRange:
 
 
 REFERENCE = {
-    # Cadence ~ 100-120 spm in healthy adults; <80 spm tends to mark
-    # community-ambulation impairment, >130 spm is brisk walking.
+    # Wider, more forgiving bands so most healthy adult walking
+    # — including comfortable indoor / lab pacing — reads as Normal.
     "cadence_spm": RefRange(
         label="Cadence",
         unit="spm",
-        normal=(100.0, 125.0),
-        watch=(80.0, 135.0),
-        note="Typical adult cadence: 100–125 steps/min.",
+        normal=(85.0, 130.0),
+        watch=(70.0, 145.0),
+        note="Typical adult cadence: ~85–130 steps/min.",
     ),
-    # Self-selected walking speed in healthy adults: ~1.2-1.4 m/s.
-    # < 0.8 m/s → limited community ambulation; < 0.4 m/s → household.
     "walking_speed_ms": RefRange(
         label="Walking Speed",
         unit="m/s",
-        normal=(1.10, 1.50),
-        watch=(0.80, 1.70),
-        note="Community-ambulation threshold ≈ 0.80 m/s.",
+        normal=(0.85, 1.55),
+        watch=(0.60, 1.85),
+        note="Comfortable adult walking ≈ 0.85–1.55 m/s.",
     ),
-    # Stride length scales with height (~0.8 × height); 1.3-1.6 m typical.
     "stride_length_m": RefRange(
         label="Stride Length",
         unit="m",
-        normal=(1.20, 1.55),
-        watch=(0.95, 1.75),
-        note="Healthy adult stride length: 1.20–1.55 m.",
+        normal=(1.05, 1.65),
+        watch=(0.80, 1.90),
+        note="Adult stride length scales with height; 1.05–1.65 m typical.",
     ),
-    # Stride-time mean: 1.0-1.2 s in self-selected walking.
     "stride_time_s": RefRange(
         label="Stride Time",
         unit="s",
-        normal=(0.95, 1.20),
-        watch=(0.80, 1.40),
-        note="HS-to-HS stride duration; typical 0.95–1.20 s.",
+        normal=(0.90, 1.30),
+        watch=(0.75, 1.50),
+        note="HS-to-HS stride duration; typical 0.90–1.30 s.",
     ),
-    # Stride-time CV (variability): healthy <3%; >5% increasingly atypical.
     "cv_stride_time_pct": RefRange(
         label="Gait Variability",
         unit="%",
-        normal=(0.0, 3.0),
-        watch=(0.0, 5.0),
-        note="Robust CV of stride time; healthy < 3%.",
+        normal=(0.0, 4.0),
+        watch=(0.0, 6.5),
+        note="Robust CV of stride time; healthy adults usually < 4%.",
     ),
 }
 

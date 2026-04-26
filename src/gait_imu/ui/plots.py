@@ -64,20 +64,23 @@ def _shade_gait_phases(ax, *, label_top=True, alpha_stance=0.35, alpha_swing=0.3
 
 
 def _normative_band(ax, mode: str):
-    """Draw a healthy-adult reference band as a soft background fill."""
+    """Draw a healthy-adult reference band as a soft lilac background fill."""
     if mode == "ankle":
         pct, mu, sd = ankle_norm_band()
-        label = "Healthy-adult reference"
     else:
         pct, mu, sd = knee_norm_band()
-        label = "Healthy-adult reference"
+    label = "Healthy-adult reference"
+
+    # Soft lilac fill on dark background
     ax.fill_between(pct, mu - sd, mu + sd,
-                    color=PLOT_COLORS["norm_band"], alpha=0.55,
+                    color=PLOT_COLORS["norm_band"], alpha=0.22,
                     linewidth=0, zorder=0.5,
                     label=label)
-    # subtle reference mean as dotted ghost line
-    ax.plot(pct, mu, color=PALETTE["muted"], linewidth=1.0, alpha=0.45,
-            linestyle=(0, (1, 2)), zorder=0.9)
+    # Brighter lilac edge for the reference mean
+    ax.plot(pct, mu,
+            color=PLOT_COLORS["norm_band_line"],
+            linewidth=1.2, alpha=0.65,
+            linestyle=(0, (3, 3)), zorder=0.9)
 
 
 def draw_angle_segments(ax, t_m, angle, pairs, keep_mask, mode):
@@ -360,15 +363,19 @@ def build_all_strides_figure(res):
 # ----------------------------------------------------------------------
 
 def build_dashboard_overlay_figure(res):
+    """Returns ``(fig, info)`` — info has ``ax``, ``pct``, ``mean``, ``std``."""
     fig, ax = plt.subplots(figsize=(6.4, 2.8))
     time_norm = res.get("time_norm")
     curves = res.get("curves")
     mode = res.get("mode", "ankle")
 
+    info = {"ax": ax, "pct": None, "mean": None, "std": None}
+
     if curves is not None and curves.size:
         mean_c = np.nanmean(curves, axis=0)
         std_c  = np.nanstd(curves, axis=0)
         pct = time_norm * 100.0
+        info["pct"], info["mean"], info["std"] = pct, mean_c, std_c
         ymin, ymax = float(np.nanmin(mean_c - std_c)), float(np.nanmax(mean_c + std_c))
         pad = (ymax - ymin) * 0.18 if ymax > ymin else 5.0
         ax.set_ylim(ymin - pad, ymax + pad)
@@ -377,9 +384,8 @@ def build_dashboard_overlay_figure(res):
 
     ax.set_xlim(0, 100)
 
-    # subtle phase shading without phase labels (saves space)
-    ax.axvspan(0,            TOE_OFF_PCT, color=PLOT_COLORS["stance_fill"], alpha=0.30, lw=0)
-    ax.axvspan(TOE_OFF_PCT, 100,          color=PLOT_COLORS["swing_fill"],  alpha=0.30, lw=0)
+    ax.axvspan(0,            TOE_OFF_PCT, color=PLOT_COLORS["stance_fill"], alpha=0.45, lw=0)
+    ax.axvspan(TOE_OFF_PCT, 100,          color=PLOT_COLORS["swing_fill"],  alpha=0.45, lw=0)
     ax.axvline(TOE_OFF_PCT, color=PALETTE["muted"], linestyle=(0, (3, 3)),
                linewidth=0.8, alpha=0.5)
 
@@ -393,16 +399,20 @@ def build_dashboard_overlay_figure(res):
 
     ax.set_xlabel("Gait cycle (%)")
     ax.set_ylabel("Ankle (deg)" if mode == "ankle" else "Knee (deg)")
-    ax.set_title("Mean stride curve  ·  ± 1 SD", loc="left", pad=10, fontsize=11)
+    ax.set_title("Mean stride curve  ·  ± 1 SD     (hover for value)",
+                 loc="left", pad=10, fontsize=11)
     ax.set_xticks([0, 25, 50, 75, 100])
     style_axes(ax)
     fig.tight_layout()
-    return fig
+    return fig, info
 
 
 def build_dashboard_histogram_figure(res):
+    """Returns ``(fig, info)`` — info has ``ax``, ``edges`` (bin edges)."""
     fig, ax = plt.subplots(figsize=(5.0, 2.8))
     stride_times = res.get("stride_times_s", np.array([]))
+    info = {"ax": ax, "edges": None}
+
     if stride_times.size:
         bins = max(6, min(18, int(np.sqrt(stride_times.size))))
         n, edges, patches = ax.hist(
@@ -411,17 +421,19 @@ def build_dashboard_histogram_figure(res):
             edgecolor="white", linewidth=1.2,
             rwidth=0.92,
         )
+        info["edges"] = edges
         mu = float(np.nanmean(stride_times))
         if np.isfinite(mu):
             ax.axvline(mu, linestyle="--", linewidth=1.6, color=PLOT_COLORS["hs_keep"])
             ax.text(mu, ax.get_ylim()[1] * 0.95, f"  μ = {mu:.2f} s",
-                    color=PLOT_COLORS["hs_keep"], fontsize=9, va="top",
+                    color=PLOT_COLORS["hs_keep"], fontsize=9.5, va="top",
                     fontweight="bold")
     else:
         _empty(ax, "Stride-time distribution")
     ax.set_xlabel("Stride time (s)")
     ax.set_ylabel("Strides")
-    ax.set_title("Stride-time distribution", loc="left", pad=10, fontsize=11)
+    ax.set_title("Stride-time distribution     (click a bar to inspect)",
+                 loc="left", pad=10, fontsize=11)
     style_axes(ax)
     fig.tight_layout()
-    return fig
+    return fig, info
