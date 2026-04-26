@@ -4,15 +4,9 @@ A desktop tool that computes ankle and knee joint angles from a
 minimal two-IMU configuration, and lets the operator review and
 curate the resulting strides.
 
-This README is the developer manual. It covers what the project does,
-how the code is organised, how to run it, and where to extend it.
-
-## Demo
-
-| | |
-| --- | --- |
-| ![](docs/demo_1.gif) | ![](docs/demo_2.gif) |
-| ![](docs/demo_3.gif) | ![](docs/demo_4.gif) |
+This README is the developer manual. It covers what the project
+does, how to run it, how the code is organised, and where to
+extend it.
 
 ## Problem
 
@@ -28,37 +22,6 @@ Inertial measurement units (IMUs) have emerged as a promising
 alternative. The central question is whether a minimal IMU
 configuration can reproduce MoCap-quality joint angles with
 sufficient accuracy and repeatability for clinical interpretation.
-
-## What the tool does
-
-An interactive IMU visualiser that streamlines the analysis
-workflow by enabling efficient review of raw and processed signals,
-stride selection, and automated generation of plots.
-
-The pipeline:
-
-1. Reads two synchronised IMU streams (foot + shank for ankle;
-   shank + thigh for knee).
-2. Performs functional sensor-to-segment calibration, so precise
-   mounting is not required.
-3. Detects heel strikes from world-vertical acceleration.
-4. Segments the recording into strides between consecutive heel
-   strikes.
-5. Reports a mean ± SD joint-angle curve over the gait cycle, plus
-   cadence, stride time, stride length, and walking speed.
-6. Allows individual strides to be kept or dropped from the average.
-
-### Validation
-
-Against Vicon optical motion capture, healthy adult level walking:
-
-| Joint          | RMSE  | Pearson *r* | CCC   |
-| -------------- | ----- | ----------- | ----- |
-| Ankle (DF/PF)  | 2.89° | 0.974       | 0.966 |
-| Knee (flexion) | 2.18° | 0.994       | high  |
-
-A two-IMU configuration estimates sagittal ankle and knee angles
-within ~3° of MoCap, with high concordance across strides.
 
 ## Install
 
@@ -77,7 +40,7 @@ pip install -e .
 macOS Homebrew users: if `python -m tkinter` fails, run
 `brew install python-tk`.
 
-## Run
+Launch:
 
 ```bash
 gait-imu
@@ -88,11 +51,71 @@ Demo data is bundled under `data/`:
 - `Subject1_A1/` for an ankle session
 - `Subject1_K1/` for a knee session
 
+## Walkthrough
+
+A guided tour using the bundled knee session.
+
+### Step 1. Place the sensors and upload data
+
+![Home tab: placement and upload](docs/demo_1.gif)
+
+The Home tab opens with two steps. Step 1 shows three views of the
+leg with each IMU position marked: front, side, and 3D perspective.
+Step 2 lets you pick the joint (Ankle or Knee) and upload the two
+CSV files. The picker requests the distal sensor first (foot for
+ankle, shank for knee), then the proximal sensor (shank or thigh).
+
+### Step 2. Read the Dashboard
+
+![Dashboard: clinical metrics and ensemble curves](docs/demo_2.gif)
+
+Once the data is processed, the Dashboard summarises the session
+as five metric tiles: cadence, stride time, stride length, walking
+speed, and gait variability. Each tile carries a status pill
+(Normal, Watch, Atypical) computed against healthy-adult ranges,
+plus the typical range and a brief explanation on hover. The two
+panels below the tiles show the mean ± SD stride curve and the
+stride-time histogram across kept strides.
+
+### Step 3. Navigate between views
+
+![Tab navigation](docs/demo_3.gif)
+
+The pill tab bar at the top routes between Home, Setup, Dashboard,
+Acceleration / HS, Gait-Cycle Overlay, and All Strides. Each view
+operates on the same loaded session, so switching tabs does not
+reload or recompute.
+
+### Step 4. Inspect heel-strike detection
+
+![Acceleration / HS view](docs/demo_4.gif)
+
+The Acceleration / HS view is the verification surface for the
+heel-strike detector. The top panel shows smoothed world-vertical
+acceleration with detected heel-strike peaks marked. The middle
+rail numbers each stride between consecutive heel strikes. The
+bottom panel shows the per-stride joint angle aligned to the same
+time axis, so detected strikes can be confirmed against plausible
+kinematic events.
+
+## Validation
+
+Against Vicon optical motion capture, healthy adult level walking:
+
+| Joint          | RMSE  | Pearson *r* | CCC   |
+| -------------- | ----- | ----------- | ----- |
+| Ankle (DF/PF)  | 2.89° | 0.974       | 0.966 |
+| Knee (flexion) | 2.18° | 0.994       | high  |
+
+A two-IMU configuration estimates sagittal ankle and knee angles
+within ~3° of MoCap, with high concordance across strides.
+
 ## Code layout
 
 ```
 gait-imu-analyzer/
 ├── data/                          bundled demo IMU sessions
+├── docs/                          demo gifs
 ├── src/gait_imu/
 │   ├── __main__.py                console entry point
 │   ├── config.py                  tunable signal/calibration thresholds
