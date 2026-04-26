@@ -4,10 +4,15 @@ A desktop tool that computes ankle and knee joint angles from a
 minimal two-IMU configuration, and lets the operator review and
 curate the resulting strides.
 
-![Demo](docs/demo.gif)
-
 This README is the developer manual. It covers what the project does,
 how the code is organised, how to run it, and where to extend it.
+
+## Demo
+
+| | |
+| --- | --- |
+| ![](docs/demo_1.gif) | ![](docs/demo_2.gif) |
+| ![](docs/demo_3.gif) | ![](docs/demo_4.gif) |
 
 ## Problem
 
