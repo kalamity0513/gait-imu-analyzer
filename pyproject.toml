@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gait-imu-analyzer"
+version = "0.1.0"
+description = "Clinical IMU gait analysis: orientation-agnostic ankle/knee angles, heel-strike detection, and interactive stride curation."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [{ name = "Kalyani" }]
+keywords = ["imu", "gait", "biomechanics", "ankle", "knee", "clinical"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Healthcare Industry",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.11",
+    "matplotlib>=3.7",
+]
+
+[project.scripts]
+gait-imu = "gait_imu.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/your-username/gait-imu-analyzer"
+Issues   = "https://github.com/your-username/gait-imu-analyzer/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+gait_imu = ["py.typed"]
