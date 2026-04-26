@@ -1,15 +1,5 @@
 # Gait IMU Analyzer
 
-A desktop tool that computes ankle and knee joint angles from a
-minimal two-IMU configuration, and lets the operator review and
-curate the resulting strides.
-
-This README is the developer manual. It covers what the project
-does, how to run it, how the code is organised, and where to
-extend it.
-
-## Problem
-
 Gait dysfunction is a hallmark of many neuromuscular and
 musculoskeletal conditions, including cerebral palsy, stroke,
 muscular dystrophy, spina bifida, and lower-limb trauma. 3D motion
@@ -153,34 +143,6 @@ resampling resolution, calibration auto-window heuristics).
 Override at runtime by importing `config` and reassigning before
 calling the pipeline.
 
-## Extending the project
-
-### Add a new joint or angle method
-
-1. Create `src/gait_imu/gait/<joint>.py` with a
-   `process_files_<joint>` function returning the same `base` dict
-   shape as `ankle.py`.
-2. Re-export it from `gait/__init__.py`.
-3. In `ui/app.py`, add the joint to the Step 2 picker and route
-   the file-load handler to your new function.
-
-Downstream stride and metrics code is joint-agnostic and works
-unchanged.
-
-### Add a new metric to the Dashboard
-
-1. Compute it inside `build_outputs_from_pairs` in
-   `gait/stride.py`.
-2. Add a normative range entry to `clinical_reference.py`.
-3. Mount a `MetricTile` (see `ui/widgets.py`) on the Dashboard tab
-   in `ui/app.py`.
-
-### Add a new figure or tab
-
-Figure builders in `ui/plots.py` follow the signature
-`build_<name>_figure(results) -> matplotlib.figure.Figure`. Add
-yours there, then mount it as a tab in `ui/app.py` using the
-existing `PillTabBar` pattern.
 
 ### Run the pipeline programmatically
 
