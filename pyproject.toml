@@ -32,8 +32,8 @@ dependencies = [
 gait-imu = "gait_imu.__main__:main"
 
 [project.urls]
-Homepage = "https://github.com/your-username/gait-imu-analyzer"
-Issues   = "https://github.com/your-username/gait-imu-analyzer/issues"
+Homepage = "https://github.com/kalamity0513/gait-imu-analyzer"
+Issues   = "https://github.com/kalamity0513/gait-imu-analyzer/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,92 +1,52 @@
-# Gait IMU Analyzer
+# Gait IMU Analyzer — Developer Manual
 
 An interactive desktop tool for ankle and knee gait analysis from a
 minimal two-IMU configuration. Built as the visualisation and stride-
 curation layer for the Honours thesis *Validating IMU-Derived Joint
-Kinematics for Pediatric Gait Analysis*
-(K. Jijith, University of Sydney, 2025).
+Kinematics for Pediatric Gait Analysis* (K. Jijith, University of
+Sydney, 2025).
 
-![Demo](docs/screenshots/demo.gif)
+This document is the manual a new developer needs to pick the project
+up: **why it exists, how the pipeline is wired, how to run it, and
+where to extend it.** Section 1 covers motivation and the validation
+context. Sections 2–4 are the developer-facing parts: install, code
+map, signal pipeline. Section 5 is the UI tour with screenshots.
+Section 6 covers extension points.
 
 ---
 
-## Background
+## 1. Why this tool exists
 
-> Gait dysfunction is a hallmark of numerous neuromuscular and
-> musculoskeletal conditions, including cerebral palsy, stroke,
-> muscular dystrophy, spina bifida, and lower-limb trauma. […]
-> 3D motion capture systems have been the gold standard for studying
-> gait, […] however, require a specialised lab, expensive equipment,
-> and trained personnel, making them impractical for frequent use,
-> especially in young children. […] To address these limitations,
-> inertial measurement units (IMUs) have emerged as a promising
-> alternative.
->
-> — *Chapter 1, Introduction*
+3D motion-capture labs are the clinical gold standard for measuring
+joint kinematics, but they need a dedicated room, multiple cameras,
+trained operators, and a cooperative subject who is willing to wear
+markers and walk in a straight line. That is rarely realistic for the
+populations who most need gait assessment — small children, patients
+recovering from surgery, neurological conditions like cerebral palsy.
 
-The thesis poses a single, focused validation question:
+Inertial measurement units (IMUs) are small, wireless, and cheap, and
+in principle any clinic can deploy them. The open question for the
+underlying thesis was a **validation** one:
 
 > The central question is whether a minimal IMU configuration can
 > reproduce MoCap-quality joint angles with sufficient accuracy and
-> repeatability for clinical interpretation.
->
-> — *Abstract*
+> repeatability for clinical interpretation. — *Abstract*
 
-This repository ships the **analysis tool that supported that work** —
-a Python desktop application for processing, visualising, and curating
-the IMU data behind those experiments.
+The thesis answered this for adult level walking with two-IMU ankle
+and knee setups (RMSE ≈ 2–3°, Pearson *r* ≥ 0.97, CCC ≥ 0.96 vs.
+Vicon). To get there, the author needed a **review and curation tool**
+that streamlined the cycle of *load → calibrate → detect heel strikes
+→ segment strides → drop bad strides → recompute → export*.
 
----
-
-## What this tool does
-
-> I developed an interactive IMU visualiser that streamlined the
-> analysis workflow by enabling efficient review of raw and processed
-> signals, stride selection, and automated generation of the plots
-> incorporated in this thesis.
->
-> — *Statement of Student Contribution*
-
-Concretely, the app:
-
-- ingests two synchronised IMU CSV streams (ankle = foot + shank;
-  knee = shank + thigh);
-- performs sensor-to-segment **functional calibration**, so the precise
-  rotation of each sensor on the limb is not critical;
-- detects **heel strikes** from world-vertical foot/shank acceleration;
-- segments **strides** between consecutive ipsilateral heel strikes;
-- computes sagittal-plane **ankle dorsi/plantar-flexion** or
-  **knee flexion** for each stride;
-- normalises strides to 0–100 % gait and reports a **mean ± SD**
-  ensemble curve plus spatiotemporal metrics (cadence, stride time,
-  stride length, walking speed, robust coefficient of variation);
-- lets the operator **keep or drop** individual strides — a reproducible
-  alternative to ad-hoc cropping.
+This repository is that tool. It is not a full clinical product — it
+is a research-grade workbench with a deliberately small surface area
+so the experimental loop stays fast and reproducible.
 
 ---
 
-## Validation summary
+## 2. Install and run
 
-Reported in Chapter 5 of the thesis. Vicon Blue Trident IMUs were
-recorded concurrently with optical motion capture during healthy adult
-level walking:
-
-| Joint           | RMSE  | MAE   | Bias                | Pearson *r* | CCC      |
-| --------------- | ----- | ----- | ------------------- | ----------- | -------- |
-| Ankle (DF/PF)   | 2.89° | 2.23° | +1.39°              | 0.974       | 0.966    |
-| Knee (flexion)  | 2.18° | —     | ≈ 0° (95 % CI ± 0.43°) | 0.994       | very high |
-
-> Taken together, these findings demonstrate that a two-IMU
-> configuration can estimate sagittal ankle and knee angles within
-> ~3° of MoCap with high concordance across strides.
->
-> — *Abstract*
-
----
-
-## Install and run
-
-Requires **Python ≥ 3.9** (macOS, Linux, or Windows).
+Requires **Python ≥ 3.9** on macOS, Linux, or Windows.
 
 ```bash
 git clone https://github.com/kalamity0513/gait-imu-analyzer.git
@@ -95,148 +55,320 @@ cd gait-imu-analyzer
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 
-pip install -e .
+pip install -e .                   # editable install — code edits take effect immediately
 ```
 
-> **macOS note.** The app uses Tkinter, which ships with the python.org
-> installer but is not always included with Homebrew Python. If
-> `python -m tkinter` raises an error, install `brew install python-tk`.
+> **macOS — Tkinter.** The UI uses Tkinter, which ships with the
+> python.org installer but is **not** included with Homebrew Python.
+> If `python -m tkinter` raises an error, install
+> `brew install python-tk@3.12` (match your Python minor version).
 
-Launch:
+Launch the app:
 
 ```bash
-gait-imu                # console-script
-# or
-python -m gait_imu      # equivalent
+gait-imu                # console-script entry point
+# or, equivalent:
+python -m gait_imu
 ```
 
----
+The app window opens on the **Home** tab. Drive through:
+*Home → Step 1 (placement) → Step 2 (joint + CSV upload) →
+Acceleration / HS → Gait-Cycle Overlay → All Strides →
+Dashboard → Setup / Export*.
 
-## How it looks — what each tab is for
-
-The descriptions below are quoted from **Appendix C** of the thesis,
-where each tab is documented as part of the methodology.
-
-### Home — placement + upload
-
-A two-step onboarding flow. **Step 1** shows three views of the
-anatomical leg (front, side, 3D perspective) with IMU pucks marked,
-alongside a numbered placement panel. **Step 2** is the joint pick
-(*Ankle / Knee*) and CSV upload.
-
-### Acceleration / HS
-
-> The upper panel shows the smoothed vertical acceleration with
-> automatically detected heel strikes (candidate peaks, rejected
-> peaks, and peaks retained after gating). The middle rail
-> summarises HS-to-HS stride segments over absolute time, and the
-> lower panel overlays ankle or knee angle segments aligned to the
-> same timebase. This view was used to verify heel-strike detection
-> and to choose the starting peak for stride segmentation.
->
-> — *Appendix C.1*
-
-### Gait-Cycle Overlay
-
-> Each kept stride is normalised from heel strike to heel strike and
-> resampled to a fixed number of points, allowing computation of the
-> mean joint angle trajectory and its standard deviation over the
-> gait cycle. This tab was used to inspect whether IMU-derived joint
-> kinematics showed the expected stance and swing features and to
-> compare different calibration or trimming choices.
->
-> — *Appendix C.2*
-
-A lilac healthy-adult reference band can optionally be overlaid for
-visual comparison.
-
-### All Strides
-
-> Each line represents a single stride normalised to percentage gait.
-> Clicking a curve or its entry in the legend toggles whether that
-> stride is kept for subsequent averaging and metric calculation.
-> This interface was used to exclude atypical strides (e.g. first
-> steps, turns, or obvious artefacts) in a transparent and
-> reproducible way.
->
-> — *Appendix C.3*
-
-### Dashboard
-
-> Compact "clinical" tiles summarise cadence, stride time, stride
-> length, walking speed, and gait variability, alongside a mean ± SD
-> joint-angle curve and a stride-time histogram. A session summary
-> panel provides a textual description and simple sanity checks
-> (e.g. unusually long stride times or very low walking speed).
->
-> — *Appendix C.5*
-
-Each tile carries a status pill (Normal / Watch / Atypical) and a
-healthy-adult reference-range bar; hovering flips the card to reveal
-a plain-language description of how the metric is computed.
-
-### Setup / Export
-
-Calibration windows (standing / flexion / ankle-zero), stride trimming,
-and CSV export of overlay, all-strides, kept-strides, and metrics
-tables.
+For headless / batch use the pipelines are pure functions — see
+section 6.4.
 
 ---
 
-## Bundled demo data
+## 3. Code map
 
-> **Demo data only.** The two sessions in `data/` ship with the repo
-> purely so you can try the pipeline end-to-end without recording
-> your own IMU streams. They are not the cohort recordings used for
-> the thesis validation, and the numbers reported by the app on
-> these files should be treated as illustrative.
+```
+gait-imu-analyzer/
+├── data/                            demo sessions (Subject1_A1, Subject1_K1)
+├── docs/screenshots/                UI screenshots (regenerated by scripts/)
+├── scripts/
+│   └── generate_screenshots.py      headless mpl renderer for README images
+├── src/gait_imu/
+│   ├── __main__.py                  console entry — calls ui.app.IMUApp().mainloop()
+│   ├── config.py                    tunable signal/calibration thresholds
+│   ├── theme.py                     palette, mpl rcParams, ttk styling
+│   ├── clinical_reference.py        normative ranges + gait-phase definitions
+│   ├── io_utils.py                  CSV ingest + column auto-detection
+│   ├── signal_utils.py              filters, robust stats, ZUPT integration
+│   ├── calibration.py               functional anatomical calibration
+│   ├── gait/
+│   │   ├── ankle.py                 foot + shank → ankle pipeline
+│   │   ├── knee.py                  shank + thigh → knee pipeline
+│   │   └── stride.py                HS pairing, resampling, results assembly
+│   ├── export.py                    CSV export of session results
+│   └── ui/
+│       ├── app.py                   IMUApp — header, tab orchestration, state
+│       ├── widgets.py               Card / FlipCard / MetricTile / PillTabBar
+│       ├── sensor_diagram.py        3-view anatomical leg + IMU pucks
+│       └── plots.py                 figure builders (phase shading, normative bands)
+├── pyproject.toml
+└── README.md
+```
 
-| Folder              | Joint | Files to load                                                |
-| ------------------- | ----- | ------------------------------------------------------------ |
-| `data/Subject1_A1/` | Ankle | `Subject1_A1_Foot.csv`, `Subject1_A1_Shank.csv`              |
-| `data/Subject1_K1/` | Knee  | `Subject1_K1_Shank.csv`, `Subject1_K1_Thigh.csv`             |
+### Module sizes (rough)
 
-### Walk-through (ankle session)
+| Layer       | Files                                  | LOC    |
+| ----------- | -------------------------------------- | ------ |
+| Pipeline    | `gait/`, `calibration.py`, `signal_*`  | ~700   |
+| UI          | `ui/app.py`, `widgets.py`, `plots.py`  | ~2300  |
+| Reference   | `clinical_reference.py`, `theme.py`    | ~440   |
 
-1. Launch `gait-imu`.
-2. **Home → Step 1** — read the placement panel; mount the **Foot IMU**
-   on the dorsum (top of the foot, just past the laces) and the
-   **Shank IMU** on the antero-medial mid-shank.
-3. **Home → Step 2** — pick *Ankle (Foot + Shank)* and the
-   *Functional DF/PF* angle method; press **Select CSV files**.
-4. Pick `data/Subject1_A1/Subject1_A1_Foot.csv`, then
-   `Subject1_A1_Shank.csv`.
-5. Inspect the **Dashboard**, **Acceleration / HS**, **Gait-Cycle
-   Overlay**, and **All Strides** tabs. Drop atypical strides on
-   *All Strides* → press **Recompute from kept**.
-6. From **Setup → Export CSV** four files are written
-   (`*_overlay.csv`, `*_strides_all.csv`, `*_strides_kept.csv`,
-   `*_metrics.csv`).
+Almost all UI complexity lives in `ui/app.py`. The pipeline modules
+are small and intentionally pure (input → numpy/dict output, no
+global state, no Tk imports).
 
-The knee session uses the same flow with `data/Subject1_K1/`.
+### Layering rule
+
+```
+ui/  ──► gait/, export, calibration, clinical_reference, theme
+gait/ ──► calibration, signal_utils, io_utils, config
+```
+
+Pipeline modules **must not** import from `ui/`. UI modules call into
+pipeline modules and never the other way. Keep it that way — the
+pipelines are also exercised from notebooks and the screenshot script.
 
 ---
 
-## CSV format
+## 4. Signal pipeline
 
-One row per IMU sample. Columns are auto-detected — recognised aliases:
+For an ankle session: foot CSV (distal, with quaternions + accel) and
+shank CSV (proximal, quaternions only). For a knee session: shank
+(distal) and thigh (proximal). Same skeleton applies to both.
 
-| Quantity     | Recognised column names                                              |
-| ------------ | -------------------------------------------------------------------- |
-| Time         | `time_s`, `time`, `timestamp`, `t`, `sec`, `seconds`                 |
-| Quaternion   | `qx, qy, qz, qr` (or `qw`); also any `Q*` / `Quat_*` variant         |
-| Acceleration | `ax, ay, az` (m/s²); also `acc_x`, `accelerometer_x`, `acc_x_mss`, … |
+```
+                  ┌──────────────┐
+   Foot CSV  ───► │  io_utils    │ ─── load_csv() → time + quat + accel arrays
+                  └──────┬───────┘
+   Shank CSV ───►        │
+                         ▼
+                  ┌──────────────┐    standing window → vertical axis
+                  │ calibration  │    flexion window  → hinge axis
+                  │              │    triad → R_anat_to_sensor (per sensor)
+                  └──────┬───────┘
+                         ▼
+                  ┌──────────────┐
+                  │ gait/ankle   │    project quaternions into anatomical frame,
+                  │  or knee     │    compute sagittal joint angle θ(t)
+                  └──────┬───────┘
+                         ▼
+                  ┌──────────────┐    smooth distal world-vertical accel
+                  │ HS detection │    peaks gated by max(global, local) k·σ
+                  │ (signal_utils)│   → t_HS array
+                  └──────┬───────┘
+                         ▼
+                  ┌──────────────┐    consecutive HS pairs → strides
+                  │ gait/stride  │    resample θ to N_RESAMPLE points (0–100 % gait)
+                  │              │    Sav-Gol smooth, mean ± SD ensemble
+                  └──────┬───────┘    spatiotemporal metrics (cadence, stride length …)
+                         ▼
+                  results dict ──►  ui/plots.py figure builders
+                              └──►  export.py CSV writer
+```
 
-The **distal** CSV (foot for ankle, shank for knee) needs quaternion
-*and* accelerometer columns. The **proximal** CSV (shank or thigh)
-needs quaternions only.
+### 4.1 Calibration (`calibration.py`)
+
+Functional, not anatomical-marker based. Two short windows:
+- **Standing still** — gravity vector ⇒ each sensor's vertical axis.
+- **Flexion** — principal rotation between the two sensors ⇒ the
+  joint hinge axis.
+
+A right-handed triad (vertical + hinge → forward) is built and
+projected back into each sensor frame. Output: per-sensor
+`R_anat_to_sensor`, used for the rest of the trial.
+
+The user can either let the app auto-pick those windows from the
+"near-zero acceleration" heuristic in `config.py`
+(`ZERO_TOL_MSS`, `ZERO_MIN_LEN_S`) or set them manually on the
+**Setup** tab.
+
+### 4.2 Joint angle (`gait/ankle.py`, `gait/knee.py`)
+
+Both modules expose `process_files_*(distal_csv, proximal_csv,
+ankle_mode=...)` returning a `base` dict with calibrated angles plus
+the inputs the heel-strike + stride stages need.
+
+- **Ankle** has two modes:
+  - `dfpf` (default) — sagittal dorsiflexion / plantarflexion from
+    the projected anatomical-frame quaternions.
+  - `so3` — full SO(3) decomposition; useful for sanity checks.
+- **Knee** is sagittal flexion only; abduction/adduction is reported
+  but not used in the validation chapter.
+
+### 4.3 Heel-strike detection (`signal_utils.py`)
+
+Smoothed (`ACC_SMOOTH_S` moving mean) world-vertical acceleration
+of the distal sensor. Candidate peaks pass a SciPy `find_peaks` call;
+they are then **gated** by
+
+```
+height ≥ max( HEIGHT_K_GLOBAL · σ_global,
+              HEIGHT_K_LOCAL  · σ_local(LOCAL_WIN_S) )
+```
+
+with a minimum spacing of `MIN_HS_SEP_S`. All thresholds live in
+`config.py`. The Acceleration / HS tab visualises the three peak
+sets — *candidates*, *rejected*, *retained* — so the operator can see
+exactly why a peak was kept or dropped.
+
+### 4.4 Strides + ensemble (`gait/stride.py`)
+
+`make_pairs(t_HS)` yields consecutive HS pairs. For each pair the
+joint-angle slice is resampled to `N_RESAMPLE = 300` points and
+smoothed with a Savitzky–Golay filter
+(`SAVGOL_WIN`, `SAVGOL_POLY`). `build_outputs_from_pairs(base)`
+returns the full results dict (ensemble mean ± SD, individual
+strides, metrics, kept/dropped masks, raw arrays for plots).
+
+Stride length and walking speed come from per-stride trapezoidal
+integration of distal acceleration with linear-drift correction
+(*v* end forced to zero), then position; mean stride length / mean
+stride time. Reported on the Dashboard.
+
+### 4.5 Configurable parameters
+
+All pipeline thresholds are module-level constants in
+`src/gait_imu/config.py`. Override at runtime by importing and
+reassigning before calling the pipeline:
+
+```python
+from gait_imu import config
+config.HEIGHT_K_GLOBAL = 3.2     # stricter HS detection
+```
+
+There is no env-var or CLI plumbing for these on purpose — they
+are research knobs, not user settings.
 
 ---
 
-## Programmatic use
+## 5. UI tour
 
-The pipelines are pure functions — callable from a notebook or batch
-script without launching the UI.
+The screenshots below are regenerated by
+`scripts/generate_screenshots.py` from the bundled demo sessions.
+The Home tab and pill tab bar are GUI-only and live in
+`ui/app.py` + `ui/widgets.py`.
+
+### 5.1 Home — placement + upload
+
+Two-step onboarding.
+
+**Step 1** — three views of the anatomical leg with IMU pucks marked
+(front, side, 3D perspective), alongside a numbered placement panel.
+The numbered list calls out the puck colour, the IMU name (Foot /
+Shank / Thigh) and the body landmark (e.g. *dorsum, just past the
+laces*).
+
+| Ankle placement | Knee placement |
+| --------------- | -------------- |
+| ![](docs/screenshots/sensor_ankle.png) | ![](docs/screenshots/sensor_knee.png) |
+
+**Step 2** — joint pick (*Ankle / Knee*), angle method
+(*Functional DF/PF* or *SO(3)* for ankle), and CSV upload. The app
+auto-detects which of the two CSVs is distal vs. proximal by
+inspecting available columns.
+
+### 5.2 Acceleration / HS
+
+Used to verify heel-strike detection and to choose the starting peak
+for stride segmentation.
+
+- **Top panel** — smoothed vertical acceleration with detected heel
+  strikes; candidate peaks, rejected peaks, and retained peaks are
+  colour-coded.
+- **Middle rail** — HS-to-HS stride segments over absolute time.
+- **Lower panel** — joint angle segments aligned to the same timebase.
+
+| Ankle session | Knee session |
+| ------------- | ------------ |
+| ![](docs/screenshots/acceleration_ankle.png) | ![](docs/screenshots/acceleration_knee.png) |
+
+### 5.3 Gait-Cycle Overlay
+
+Every kept stride normalised to 0–100 % gait, plus the ensemble mean
+± SD. Used to inspect whether the IMU-derived kinematics show the
+expected stance/swing features and to compare calibration choices.
+A lilac healthy-adult reference band can be overlaid for visual
+comparison.
+
+| Ankle DF/PF | Knee flexion |
+| ----------- | ------------ |
+| ![](docs/screenshots/overlay_ankle.png) | ![](docs/screenshots/overlay_knee.png) |
+
+### 5.4 All Strides
+
+Each line is a single stride. Click a curve or its legend entry to
+toggle whether that stride is kept for averaging and metric
+computation. This is the curation interface — used to drop first
+steps, turns, and obvious artefacts in a transparent way.
+
+| Ankle | Knee |
+| ----- | ---- |
+| ![](docs/screenshots/all_strides_ankle.png) | ![](docs/screenshots/all_strides_knee.png) |
+
+### 5.5 Dashboard
+
+Compact "clinical" tiles for cadence, stride time, stride length,
+walking speed, and gait variability, plus the mean ± SD overlay and
+a stride-time histogram. Each tile carries a status pill
+(*Normal / Watch / Atypical*) computed against the healthy-adult
+ranges in `clinical_reference.py`.
+
+| Mean ± SD overlay | Stride-time histogram |
+| ----------------- | --------------------- |
+| ![](docs/screenshots/dash_overlay_ankle.png) | ![](docs/screenshots/dash_hist_ankle.png) |
+
+### 5.6 Setup / Export
+
+Manual calibration windows (standing / flexion / ankle-zero), stride
+trimming, and CSV export of *overlay*, *all-strides*, *kept-strides*,
+and *metrics* tables.
+
+---
+
+## 6. Extending the project
+
+This section is the "where do I plug in?" map for a new developer.
+
+### 6.1 Add a new joint or angle method
+
+1. Create `src/gait_imu/gait/<joint>.py` with a `process_files_<joint>`
+   function that returns the same `base` dict shape as `ankle.py`
+   (fields: `time`, `angle`, `t_HS`, `accel_world_vertical`, etc.).
+2. Re-export it from `gait/__init__.py`.
+3. In `ui/app.py`, add the joint to the Step 2 picker and route
+   the file-load handler to your new function.
+
+The downstream stride + ensemble + metrics + plots code is
+joint-agnostic and works as-is.
+
+### 6.2 Add a new metric to the Dashboard
+
+1. Compute the metric inside `gait/stride.py`
+   (`build_outputs_from_pairs`) so it is part of the `results` dict.
+2. Add a normative range entry to `clinical_reference.py`.
+3. In `ui/app.py` extend the Dashboard tile row by adding a
+   `MetricTile(...)` (see `widgets.py` for the API). Tiles take a
+   value, units, status pill, and reference-range bar.
+
+### 6.3 Add a new figure / tab
+
+Figure builders live in `ui/plots.py` and follow a uniform shape:
+`build_<name>_figure(results) -> matplotlib.figure.Figure`. Add yours
+there, then mount it in `ui/app.py` via the existing `PillTabBar`
+pattern (`_build_*_tab` methods).
+
+If you want the figure in the README screenshots, add a `save(...)`
+call to `scripts/generate_screenshots.py`.
+
+### 6.4 Run the pipeline programmatically
+
+Pure functions — no UI required.
 
 ```python
 from gait_imu.gait import process_files_ankle, build_outputs_from_pairs
@@ -245,89 +377,88 @@ from gait_imu.export import export_session
 base = process_files_ankle(
     "data/Subject1_A1/Subject1_A1_Foot.csv",
     "data/Subject1_A1/Subject1_A1_Shank.csv",
-    ankle_mode="dfpf",          # or "so3"
+    ankle_mode="dfpf",
 )
-res = build_outputs_from_pairs(base)
-export_session(res, "exports/subject1.csv")
+results = build_outputs_from_pairs(base)
+
+# results["overlay"]   - mean ± SD ensemble
+# results["strides"]   - per-stride normalised curves
+# results["metrics"]   - cadence, stride time, stride length, …
+
+export_session(results, "exports/subject1.csv")
 ```
 
-For knee analyses, swap in `process_files_knee` with shank + thigh CSVs.
+For knee, swap in `process_files_knee(shank_csv, thigh_csv)`.
 
----
+### 6.5 Regenerate README screenshots
 
-## Project layout
+After changing any plot in `ui/plots.py` or the sensor diagram:
 
-```
-gait-imu-analyzer/
-├── data/                   demo sessions (Subject1_A1, Subject1_K1)
-├── docs/screenshots/       UI screenshots + demo gif
-├── src/gait_imu/
-│   ├── config.py               tunable signal/calibration parameters
-│   ├── theme.py                palette, typography, mpl defaults
-│   ├── clinical_reference.py   normative ranges, gait-phase definitions
-│   ├── io_utils.py             CSV ingest + column auto-detection
-│   ├── signal_utils.py         filters, robust stats, ZUPT integration
-│   ├── calibration.py          functional anatomical calibration
-│   ├── gait/
-│   │   ├── ankle.py            foot + shank → ankle pipeline
-│   │   ├── knee.py             shank + thigh → knee pipeline
-│   │   └── stride.py           HS pairing, resampling, results
-│   ├── export.py               CSV export of session results
-│   └── ui/
-│       ├── widgets.py          Card / FlipCard / MetricTile / PillTabBar
-│       ├── sensor_diagram.py   3-view anatomical leg + IMU pucks
-│       ├── plots.py            figure builders (phase shading, normative bands)
-│       └── app.py              IMUApp: header + tab orchestration
-├── pyproject.toml
-├── requirements.txt
-├── LICENSE
-└── README.md
+```bash
+python scripts/generate_screenshots.py
 ```
 
----
-
-## Method notes (short)
-
-- **Functional calibration.** A standing-still window estimates each
-  sensor's vertical axis; a flexion window estimates the joint hinge
-  axis from the principal rotation between the two sensors. A right-
-  handed triad (vertical + hinge → forward) is constructed and
-  projected back into each sensor frame to yield the per-sensor
-  anatomical-to-sensor rotation.
-- **Heel-strike detection.** Smoothed vertical world acceleration is
-  gated with the larger of a global threshold (*k* × robust σ over
-  the trial) and a local threshold (*k* × rolling σ over
-  `LOCAL_WIN_S`).
-- **Stride length & walking speed.** Per-stride trapezoidal velocity,
-  then linear-drift correction enforcing *v*(*t*<sub>end</sub>) = 0,
-  then trapezoidal position. Walking speed is computed as
-  mean stride length / mean stride time.
-
-All thresholds live in `src/gait_imu/config.py`.
+Writes 12 PNGs into `docs/screenshots/`. The script uses the
+matplotlib `Agg` backend so it does not need a display server.
+GUI-only screens (Home, pill tabs) cannot be produced this way —
+capture those from a running app and drop them in as
+`docs/screenshots/app_*.png`.
 
 ---
 
-## Recording the demo
+## 7. CSV format
 
-`docs/screenshots/demo.gif` is a short walk-through of the app on the
-bundled ankle session. To re-record on macOS:
+One row per IMU sample. Columns are auto-detected — recognised
+aliases:
 
-1. `Cmd + Shift + 5` → *Record Selected Portion* → drag a rectangle
-   around the app window → *Record*. Drive through
-   *Home → Dashboard → All Strides*, then stop.
-2. Convert with [`ffmpeg`](https://ffmpeg.org/):
+| Quantity     | Recognised column names                                              |
+| ------------ | -------------------------------------------------------------------- |
+| Time         | `time_s`, `time`, `timestamp`, `t`, `sec`, `seconds`                 |
+| Quaternion   | `qx, qy, qz, qr` (or `qw`); also any `Q*` / `Quat_*` variant         |
+| Acceleration | `ax, ay, az` (m/s²); also `acc_x`, `accelerometer_x`, `acc_x_mss`, … |
 
-   ```bash
-   ffmpeg -i ~/Desktop/demo.mov \
-          -vf "fps=12,scale=960:-1:flags=lanczos" \
-          -loop 0 docs/screenshots/demo.gif
-   ```
+The **distal** CSV (foot for ankle, shank for knee) needs quaternion
+**and** accelerometer columns. The **proximal** CSV (shank or thigh)
+needs quaternions only.
 
-3. Commit and push.
+If your raw export uses a column name not in the alias list, add it
+to `io_utils.py` rather than renaming columns by hand.
 
 ---
 
-## Citation
+## 8. Bundled demo data
+
+> **Demo data only.** The two sessions in `data/` ship with the repo
+> purely so you can try the pipeline end-to-end without recording
+> your own IMU streams. They are **not** the cohort recordings used
+> for the thesis validation, and the numbers reported by the app on
+> these files should be treated as illustrative.
+
+| Folder              | Joint | Files to load                                                |
+| ------------------- | ----- | ------------------------------------------------------------ |
+| `data/Subject1_A1/` | Ankle | `Subject1_A1_Foot.csv`, `Subject1_A1_Shank.csv`              |
+| `data/Subject1_K1/` | Knee  | `Subject1_K1_Shank.csv`, `Subject1_K1_Thigh.csv`             |
+
+---
+
+## 9. Validation summary (from the thesis)
+
+Reported in Chapter 5 of the underlying thesis. Vicon Blue Trident
+IMUs were recorded concurrently with optical motion capture during
+healthy adult level walking:
+
+| Joint           | RMSE  | MAE   | Bias                | Pearson *r* | CCC      |
+| --------------- | ----- | ----- | ------------------- | ----------- | -------- |
+| Ankle (DF/PF)   | 2.89° | 2.23° | +1.39°              | 0.974       | 0.966    |
+| Knee (flexion)  | 2.18° | —     | ≈ 0° (95 % CI ± 0.43°) | 0.994       | very high |
+
+> Taken together, these findings demonstrate that a two-IMU
+> configuration can estimate sagittal ankle and knee angles within
+> ~3° of MoCap with high concordance across strides. — *Abstract*
+
+---
+
+## 10. Citation
 
 If you use this tool in academic work, please cite the underlying
 thesis:

@@ -240,7 +240,7 @@ def _build_leg_axes(ax, sensors, *, view, show_labels: bool):
     ax.mouse_init = lambda *args, **kw: None
 
 
-def build_sensor_diagram(mode: str = "ankle", *, figsize=(11.4, 4.8)):
+def build_sensor_diagram(mode: str = "ankle", *, figsize=(13.2, 4.8)):
     """Three-panel anatomical diagram showing IMU placement.
 
     Layout: ``FRONT``  ·  ``SIDE``  ·  ``3D PERSPECTIVE``.
@@ -254,23 +254,23 @@ def build_sensor_diagram(mode: str = "ankle", *, figsize=(11.4, 4.8)):
         sensors = [
             dict(cx=0.55, cy=0.10, cz=-0.05,
                  color=PALETTE["accent"],
-                 label="Foot IMU  ·  Dorsum",
-                 label_xyz=(1.65, 0.60, 0.10)),
+                 label="Foot · Dorsum",
+                 label_xyz=(1.30, 0.50, 0.10)),
             dict(cx=0.18, cy=0.06, cz=0.85,
                  color=PALETTE["accent2"],
-                 label="Shank IMU  ·  Antero-medial mid-shank",
-                 label_xyz=(1.10, 0.95, 0.95)),
+                 label="Shank · Mid-shank",
+                 label_xyz=(0.95, 0.80, 0.95)),
         ]
     else:
         sensors = [
             dict(cx=0.18, cy=0.06, cz=0.85,
                  color=PALETTE["accent"],
-                 label="Shank IMU  ·  Antero-medial mid-shank",
-                 label_xyz=(1.10, 0.95, 0.85)),
+                 label="Shank · Mid-shank",
+                 label_xyz=(0.95, 0.80, 0.85)),
             dict(cx=0.27, cy=0.10, cz=2.40,
                  color=PALETTE["accent2"],
-                 label="Thigh IMU  ·  Antero-lateral mid-thigh",
-                 label_xyz=(1.20, 0.95, 2.50)),
+                 label="Thigh · Mid-thigh",
+                 label_xyz=(1.00, 0.80, 2.50)),
         ]
 
     views = [
@@ -286,7 +286,9 @@ def build_sensor_diagram(mode: str = "ankle", *, figsize=(11.4, 4.8)):
                   ha="center", va="top",
                   color=PALETTE["text"], fontsize=11, fontweight="bold")
 
-    fig.subplots_adjust(left=0.0, right=1.0, top=1.0, bottom=0.0,
+    # Leave a right margin so the 3D-perspective leader labels don't get
+    # clipped against the figure edge.
+    fig.subplots_adjust(left=0.0, right=0.86, top=1.0, bottom=0.0,
                         wspace=0.0)
     return fig
 
